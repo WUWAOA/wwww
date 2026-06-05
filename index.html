@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>数字侦探</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17212b;
+      --muted: #5f6974;
+      --paper: #f7f0df;
+      --paper-deep: #ece0c8;
+      --desk: #274742;
+      --desk-dark: #16312f;
+      --accent: #b85042;
+      --gold: #c28d38;
+      --line: rgba(23, 33, 43, 0.14);
+      --shadow: 0 18px 50px rgba(12, 25, 24, 0.22);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px) 0 0 / 42px 42px,
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px) 0 0 / 42px 42px,
+        radial-gradient(circle at 18% 4%, rgba(242, 204, 132, 0.17), transparent 34%),
+        linear-gradient(135deg, var(--desk-dark), var(--desk) 54%, #31524d);
+      letter-spacing: 0;
+    }
+
+    button, input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .app {
+      width: min(1180px, calc(100vw - 28px));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 22px 0 28px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 18px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      color: #fff8e8;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 44px;
+      height: 44px;
+      border: 2px solid rgba(255, 248, 232, 0.72);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #fff8e8;
+      position: relative;
+      flex: 0 0 auto;
+    }
+
+    .mark::after {
+      content: "";
+      width: 15px;
+      height: 2px;
+      background: currentColor;
+      transform: rotate(42deg);
+      position: absolute;
+      right: -8px;
+      bottom: 5px;
+      border-radius: 2px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(26px, 4vw, 44px);
+      line-height: 1;
+      font-weight: 850;
+    }
+
+    .tagline {
+      margin-top: 4px;
+      color: rgba(255, 248, 232, 0.78);
+      font-size: 14px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .ghost-btn {
+      height: 38px;
+      padding: 0 14px;
+      border-radius: var(--radius);
+      color: #fff8e8;
+      background: rgba(255, 248, 232, 0.11);
+      border: 1px solid rgba(255, 248, 232, 0.25);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr) 318px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel, .case-file, .vault {
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      border: 1px solid rgba(255, 248, 232, 0.17);
+    }
+
+    .panel {
+      background: rgba(247, 240, 223, 0.95);
+    }
+
+    .panel-title {
+      height: 48px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      background: rgba(236, 224, 200, 0.72);
+      font-weight: 800;
+    }
+
+    .progress-note {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .case-list {
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+      max-height: calc(100vh - 138px);
+      overflow: auto;
+    }
+
+    .case-btn {
+      width: 100%;
+      text-align: left;
+      display: grid;
+      grid-template-columns: 32px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      min-height: 58px;
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.38);
+      color: var(--ink);
+      border: 1px solid transparent;
+    }
+
+    .case-btn.active {
+      background: #fff8e8;
+      border-color: rgba(184, 80, 66, 0.34);
+    }
+
+    .case-btn.locked {
+      filter: saturate(0.3);
+    }
+
+    .case-number {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #23413d;
+      color: #fff8e8;
+      display: grid;
+      place-items: center;
+      font-weight: 850;
+      font-size: 13px;
+    }
+
+    .case-btn.locked .case-number {
+      background: #8c918d;
+    }
+
+    .case-name {
+      min-width: 0;
+      font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .case-meta {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .stars {
+      color: var(--gold);
+      font-size: 15px;
+      white-space: nowrap;
+    }
+
+    .case-file {
+      background:
+        linear-gradient(90deg, rgba(137, 95, 47, 0.08) 1px, transparent 1px) 0 0 / 24px 24px,
+        linear-gradient(rgba(137, 95, 47, 0.06) 1px, transparent 1px) 0 0 / 24px 24px,
+        var(--paper);
+      min-height: 640px;
+      position: relative;
+    }
+
+    .case-file::before {
+      content: "";
+      position: absolute;
+      left: 26px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: rgba(184, 80, 66, 0.22);
+    }
+
+    .file-content {
+      position: relative;
+      padding: 28px 30px 30px 48px;
+    }
+
+    .chapter {
+      display: inline-flex;
+      align-items: center;
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid rgba(184, 80, 66, 0.28);
+      border-radius: 999px;
+      color: var(--accent);
+      background: rgba(255, 255, 255, 0.38);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    h2 {
+      margin: 14px 0 8px;
+      font-size: clamp(26px, 4vw, 42px);
+      line-height: 1.06;
+      font-weight: 900;
+    }
+
+    .story {
+      margin: 0 0 20px;
+      max-width: 720px;
+      color: #4f4436;
+      line-height: 1.68;
+      font-size: 16px;
+    }
+
+    .clue-board {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .clue {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      align-items: start;
+      gap: 10px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(23, 33, 43, 0.1);
+      background: rgba(255, 255, 255, 0.48);
+      padding: 12px;
+      line-height: 1.55;
+      min-height: 56px;
+    }
+
+    .clue.done {
+      background: rgba(194, 141, 56, 0.16);
+      border-color: rgba(194, 141, 56, 0.35);
+    }
+
+    .clue-index {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #fff8e8;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      color: var(--accent);
+      border: 1px solid rgba(184, 80, 66, 0.22);
+    }
+
+    .hint-box {
+      margin-top: 18px;
+      border-left: 4px solid var(--gold);
+      background: rgba(255, 255, 255, 0.5);
+      padding: 12px 14px;
+      display: none;
+      line-height: 1.55;
+    }
+
+    .hint-box.visible {
+      display: block;
+    }
+
+    .solved-stamp {
+      position: absolute;
+      right: 28px;
+      top: 96px;
+      transform: rotate(-12deg);
+      border: 4px solid rgba(184, 80, 66, 0.82);
+      color: rgba(184, 80, 66, 0.88);
+      padding: 8px 14px;
+      font-size: 24px;
+      font-weight: 950;
+      letter-spacing: 0;
+      display: none;
+    }
+
+    .solved .solved-stamp {
+      display: block;
+    }
+
+    .vault {
+      background: #f6f2e8;
+    }
+
+    .vault-face {
+      padding: 18px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.5), transparent),
+        #2e4745;
+      color: #fff8e8;
+      min-height: 220px;
+    }
+
+    .lock-ring {
+      width: 148px;
+      height: 148px;
+      margin: 6px auto 14px;
+      border-radius: 50%;
+      border: 12px solid rgba(255, 248, 232, 0.26);
+      display: grid;
+      place-items: center;
+      box-shadow: inset 0 0 0 2px rgba(255, 248, 232, 0.32);
+      background: rgba(0, 0, 0, 0.12);
+    }
+
+    .lock-screen {
+      width: 92px;
+      height: 54px;
+      border-radius: 7px;
+      background: #101c1d;
+      color: #82f2c9;
+      display: grid;
+      place-items: center;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 24px;
+      font-weight: 850;
+      overflow: hidden;
+    }
+
+    .input-area {
+      padding: 16px;
+    }
+
+    .code-input {
+      width: 100%;
+      height: 54px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(23, 33, 43, 0.18);
+      background: #fffaf0;
+      color: var(--ink);
+      text-align: center;
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      outline: none;
+    }
+
+    .code-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(184, 80, 66, 0.16);
+    }
+
+    .keypad {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .key, .primary-btn, .small-btn {
+      border-radius: var(--radius);
+      font-weight: 850;
+    }
+
+    .key {
+      height: 46px;
+      background: #e9dfca;
+      color: var(--ink);
+      border: 1px solid rgba(23, 33, 43, 0.1);
+      font-size: 18px;
+    }
+
+    .key:hover, .small-btn:hover, .ghost-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .primary-btn {
+      height: 44px;
+      color: #fff8e8;
+      background: var(--accent);
+    }
+
+    .small-btn {
+      height: 44px;
+      color: var(--ink);
+      background: #e9dfca;
+      border: 1px solid rgba(23, 33, 43, 0.1);
+    }
+
+    .status {
+      margin-top: 12px;
+      min-height: 44px;
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      background: rgba(39, 71, 66, 0.08);
+      color: #30413f;
+      line-height: 1.45;
+      font-size: 14px;
+    }
+
+    .status.good {
+      background: rgba(61, 125, 93, 0.14);
+      color: #1f6044;
+    }
+
+    .status.bad {
+      background: rgba(184, 80, 66, 0.14);
+      color: #943c30;
+    }
+
+    .history {
+      border-top: 1px solid var(--line);
+      padding: 14px 16px 16px;
+    }
+
+    .history-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-weight: 850;
+    }
+
+    .try-list {
+      display: grid;
+      gap: 7px;
+      max-height: 180px;
+      overflow: auto;
+    }
+
+    .try-item {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 8px;
+      align-items: center;
+      border-radius: 7px;
+      background: #fff8e8;
+      border: 1px solid rgba(23, 33, 43, 0.08);
+      padding: 8px;
+      font-size: 13px;
+    }
+
+    .try-code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-weight: 900;
+      font-size: 16px;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 17, 18, 0.58);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 20;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-card {
+      width: min(460px, 100%);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
+      padding: 24px;
+      text-align: center;
+    }
+
+    .modal-card h3 {
+      margin: 0 0 8px;
+      font-size: 30px;
+    }
+
+    .big-stars {
+      color: var(--gold);
+      font-size: 34px;
+      margin: 14px 0 8px;
+    }
+
+    .modal-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .case-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-height: none;
+      }
+
+      .case-file {
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .app {
+        width: min(100% - 20px, 1180px);
+        padding-top: 14px;
+      }
+
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .top-actions {
+        width: 100%;
+        justify-content: stretch;
+      }
+
+      .ghost-btn {
+        flex: 1;
+      }
+
+      .case-list {
+        grid-template-columns: 1fr;
+      }
+
+      .file-content {
+        padding: 22px 18px 24px 34px;
+      }
+
+      .solved-stamp {
+        position: static;
+        display: none;
+        width: fit-content;
+        margin: 8px 0 14px;
+      }
+
+      .solved .solved-stamp {
+        display: block;
+      }
+
+      .modal-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="brand">
+        <div class="mark" aria-hidden="true">#</div>
+        <div>
+          <h1>数字侦探</h1>
+          <div class="tagline">读线索，排除可能，破解隐藏密码。</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="ghost-btn" id="newGameBtn">重新开始</button>
+        <button class="ghost-btn" id="randomCaseBtn">随机案件</button>
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside class="panel">
+        <div class="panel-title">
+          <span>案件档案</span>
+          <span class="progress-note" id="progressNote">0/12</span>
+        </div>
+        <div class="case-list" id="caseList"></div>
+      </aside>
+
+      <section class="case-file" id="caseFile">
+        <div class="file-content">
+          <div class="chapter" id="chapterName">第一章</div>
+          <h2 id="caseTitle">午夜保险箱</h2>
+          <div class="solved-stamp">已破解</div>
+          <p class="story" id="caseStory"></p>
+          <div class="clue-board" id="clueBoard"></div>
+          <div class="hint-box" id="hintBox"></div>
+        </div>
+      </section>
+
+      <aside class="vault">
+        <div class="vault-face">
+          <div class="lock-ring">
+            <div class="lock-screen" id="lockScreen">----</div>
+          </div>
+          <div style="text-align:center;font-weight:850;">密码锁终端</div>
+        </div>
+        <div class="input-area">
+          <input class="code-input" id="codeInput" inputmode="numeric" autocomplete="off" maxlength="4" aria-label="输入密码" />
+          <div class="keypad" id="keypad"></div>
+          <div class="actions">
+            <button class="primary-btn" id="submitBtn">提交</button>
+            <button class="small-btn" id="hintBtn">提示</button>
+            <button class="small-btn" id="clearBtn">清空</button>
+            <button class="small-btn" id="nextBtn">下一案</button>
+          </div>
+          <div class="status" id="status">选择一个案件，输入你推理出的密码。</div>
+        </div>
+        <div class="history">
+          <div class="history-title">
+            <span>尝试记录</span>
+            <span id="caseStats">0 次</span>
+          </div>
+          <div class="try-list" id="tryList"></div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="modal" id="solvedModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <h3 id="modalTitle">案件破解</h3>
+      <div class="big-stars" id="modalStars">★★★</div>
+      <p id="modalText">你成功打开了密码锁。</p>
+      <div class="modal-actions">
+        <button class="small-btn" id="stayBtn">查看线索</button>
+        <button class="primary-btn" id="modalNextBtn">下一案</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const cases = [
+      {
+        chapter: "第一章：保险箱密码",
+        title: "午夜保险箱",
+        story: "旧保险箱停在 03:17。锁盘旁有一张便签，写着几个被咖啡浸湿的数字条件。",
+        answer: "735",
+        clues: ["密码是三位数。", "三个数字互不相同。", "数字之和是 15。", "百位比个位大 2。", "十位是奇数。", "密码能被 5 整除。"],
+        hints: ["能被 5 整除，所以个位只能是 0 或 5。", "百位比个位大 2；如果个位是 5，百位就是 7。", "剩下十位要让数字和等于 15。"],
+        fail: code => {
+          if (code.length !== 3) return "这案子需要三位数密码。";
+          if (!code.endsWith("0") && !code.endsWith("5")) return "它没有通过“能被 5 整除”的条件。";
+          const sum = digitSum(code);
+          if (sum !== 15) return `数字之和是 ${sum}，不是 15。`;
+          return "有一条大小关系还没有对上。";
+        }
+      },
+      {
+        chapter: "第一章：保险箱密码",
+        title: "剧院后台",
+        story: "后台门禁被人改成三位数。管理员只记得它和座位编号的规律有关。",
+        answer: "462",
+        clues: ["密码是三位数。", "百位是偶数。", "十位比百位大 2。", "个位是十位的三分之一。", "三个数字之和是 12。"],
+        hints: ["十位比百位大 2，百位不能太大。", "个位是十位的三分之一，所以十位必须能被 3 整除。", "三个数字合起来是 12。"],
+        fail: code => {
+          if (code.length !== 3) return "这里要输入三位数。";
+          const [a, b, c] = digits(code);
+          if (a % 2 !== 0) return "百位不是偶数。";
+          if (b !== a + 2) return "十位没有比百位大 2。";
+          if (c * 3 !== b) return "个位和十位的三分之一关系不成立。";
+          return "数字和还不对。";
+        }
+      },
+      {
+        chapter: "第一章：保险箱密码",
+        title: "蓝色票根",
+        story: "一张蓝色票根背面写着：位置越靠后，数字越小。票根就是密码。",
+        answer: "852",
+        clues: ["密码是三位数。", "百位和个位都是偶数。", "数字从左到右递减。", "数字之和是 15。", "百位比个位大 6。"],
+        hints: ["百位和个位都是偶数，中间位不一定是。", "百位比个位大 6，可尝试 8 和 2。", "数字递减，中间位要落在百位和个位之间。"],
+        fail: code => {
+          if (code.length !== 3) return "票根上对应的是三位数。";
+          const ds = digits(code);
+          if (ds[0] % 2 !== 0 || ds[2] % 2 !== 0) return "百位或个位不是偶数。";
+          if (!(ds[0] > ds[1] && ds[1] > ds[2])) return "数字没有从左到右递减。";
+          if (digitSum(code) !== 15) return "数字之和还不是 15。";
+          return "百位和个位的差值不对。";
+        }
+      },
+      {
+        chapter: "第二章：失踪的票据",
+        title: "雨夜收据",
+        story: "便利店收据只剩下四个数字的关系。老板说，第一位绝不可能是 0。",
+        answer: "4863",
+        clues: ["密码是四位数。", "第一位不是 0。", "第二位是第一位的 2 倍。", "第三位比第四位大 3。", "四个数字之和是 21。"],
+        hints: ["第二位是第一位的 2 倍，所以第一位只能在 1 到 4 之间。", "如果第一位是 4，第二位就是 8。", "第三位和第四位相差 3，并且剩余数字和是 9。"],
+        fail: code => {
+          if (code.length !== 4) return "收据对应四位数密码。";
+          const [a, b, c, d] = digits(code);
+          if (a === 0) return "第一位不能是 0。";
+          if (b !== a * 2) return "第二位不是第一位的 2 倍。";
+          if (c !== d + 3) return "第三位没有比第四位大 3。";
+          return "总和还没有对上 21。";
+        }
+      },
+      {
+        chapter: "第二章：失踪的票据",
+        title: "档案柜 17",
+        story: "档案柜的编号被换掉了。钥匙孔旁刻着一个很工整的范围条件。",
+        answer: "6390",
+        clues: ["密码是四位数。", "密码大于 6000，小于 7000。", "十位是百位的 3 倍。", "个位是 0。", "四个数字之和是 18。"],
+        hints: ["范围条件说明千位一定是 6。", "个位已经确定是 0。", "剩下百位和十位要合计 12，且十位是百位 3 倍。"],
+        fail: code => {
+          if (code.length !== 4) return "档案柜需要四位数。";
+          const [a, b, c, d] = digits(code);
+          if (a !== 6) return "范围条件决定千位必须是 6。";
+          if (d !== 0) return "个位应该是 0。";
+          if (c !== b * 3) return "十位不是百位的 3 倍。";
+          return "数字总和没有等于 18。";
+        }
+      },
+      {
+        chapter: "第二章：失踪的票据",
+        title: "邮局暗格",
+        story: "邮局暗格里藏着一封没有寄出的信。信封上的邮编被改成了密码。",
+        answer: "5274",
+        clues: ["密码是四位数。", "第一位是质数。", "第二位比第一位小 3。", "第三位是第二位与第四位的和。", "第四位是偶数。", "数字之和是 18。"],
+        hints: ["一位数质数只有 2、3、5、7。", "第二位比第一位小 3，所以第一位至少是 5。", "第三位等于第二位加第四位。"],
+        fail: code => {
+          if (code.length !== 4) return "暗格使用四位数密码。";
+          const [a, b, c, d] = digits(code);
+          if (!isPrime(a)) return "第一位不是质数。";
+          if (b !== a - 3) return "第二位没有比第一位小 3。";
+          if (c !== b + d) return "第三位不是第二位和第四位的和。";
+          return "检查一下偶数条件或数字总和。";
+        }
+      },
+      {
+        chapter: "第三章：实验室终端",
+        title: "终端 404",
+        story: "实验室终端不断闪烁。屏幕显示：前半段、后半段，都藏着数学痕迹。",
+        answer: "2447",
+        clues: ["密码是四位数。", "前两位组成的数是 12 的倍数。", "后两位组成的数是质数。", "第一位是第二位的一半。", "第三位比第四位小 3。"],
+        hints: ["前两位是 12 的倍数，并且第一位是第二位的一半。", "符合前半段关系的两位数可以先试 12、24、36、48。", "后两位是质数，且十位比个位小 3。"],
+        fail: code => {
+          if (code.length !== 4) return "终端需要四位数密码。";
+          const [a, b, c, d] = digits(code);
+          if ((a * 10 + b) % 12 !== 0) return "前两位组成的数不是 12 的倍数。";
+          if (!isPrime(c * 10 + d)) return "后两位组成的数不是质数。";
+          if (a * 2 !== b) return "第一位不是第二位的一半。";
+          return "第三位和第四位的差还不对。";
+        }
+      },
+      {
+        chapter: "第三章：实验室终端",
+        title: "白板残影",
+        story: "白板上只剩下半擦掉的平方符号。看来密码和平方数有关。",
+        answer: "1694",
+        clues: ["密码是四位数。", "前两位组成的数是平方数。", "第三位比第二位大 3。", "第四位是第一位的 4 倍。", "数字之和是 20。"],
+        hints: ["前两位组成的两位平方数有 16、25、36、49、64、81。", "第四位是第一位的 4 倍，所以第一位不能超过 2。", "前两位很可能是 16。"],
+        fail: code => {
+          if (code.length !== 4) return "白板线索指向四位数。";
+          const [a, b, c, d] = digits(code);
+          if (!isSquare(a * 10 + b)) return "前两位不是平方数。";
+          if (c !== b + 3) return "第三位没有比第二位大 3。";
+          if (d !== a * 4) return "第四位不是第一位的 4 倍。";
+          return "数字总和还不对。";
+        }
+      },
+      {
+        chapter: "第三章：实验室终端",
+        title: "冷库编号",
+        story: "冷库门被锁死，温度表停在 -8。门上的线索全都和倍数有关。",
+        answer: "3618",
+        clues: ["密码是四位数。", "第一位和第二位组成的数能被 9 整除。", "第三位比第一位小 2。", "第四位比第三位大 7。", "四个数字之和是 18。"],
+        hints: ["前两位组成的数能被 9 整除，两个数字和也应能被 9 整除。", "第三位比第一位小 2，所以第一位至少是 2。", "第四位比第三位大 7，这会进一步锁定第三位。"],
+        fail: code => {
+          if (code.length !== 4) return "冷库编号是四位数。";
+          const [a, b, c, d] = digits(code);
+          if ((a * 10 + b) % 9 !== 0) return "前两位组成的数不能被 9 整除。";
+          if (c !== a - 2) return "第三位没有比第一位小 2。";
+          if (d !== c + 7) return "第四位没有比第三位大 7。";
+          return "数字之和还不是 18。";
+        }
+      },
+      {
+        chapter: "第四章：最终案件",
+        title: "红色烟雾弹",
+        story: "最后的信封里有六条线索，但探员标注：其中有一条是假的。",
+        answer: "482",
+        clues: ["密码是三位数。", "数字之和是 14。", "百位是偶数。", "十位比个位大 6。", "密码能被 2 整除。", "百位比十位大 1。", "以上线索中有一条是假的。"],
+        hints: ["因为密码能被 2 整除，个位是偶数。", "十位比个位大 6，可以先尝试个位 0、2、3。", "真正的答案会只违反一条普通线索。"],
+        fail: code => {
+          if (code.length !== 3) return "这仍然是三位数密码。";
+          const ordinary = finalCaseChecks(code, 0);
+          const failed = ordinary.filter(Boolean).length;
+          if (failed !== 1) return `它违反了 ${failed} 条普通线索，不符合“只有一条是假的”。`;
+          return "只剩最后一步：看哪条是假线索。";
+        },
+        final: true
+      },
+      {
+        chapter: "第四章：最终案件",
+        title: "玻璃电梯",
+        story: "电梯停在顶层，控制屏显示：有一条线索来自嫌疑人，不能信。",
+        answer: "751",
+        clues: ["密码是三位数。", "百位是 7。", "十位是奇数。", "个位比十位小 4。", "数字之和是 13。", "密码能被 3 整除。", "以上线索中有一条是假的。"],
+        hints: ["先相信百位是 7，会大幅缩小范围。", "个位比十位小 4，十位至少是 4。", "答案会只违反一条普通线索。"],
+        fail: code => {
+          if (code.length !== 3) return "电梯终端要三位数。";
+          const [a, b, c] = digits(code);
+          const failed = [
+            a !== 7,
+            b % 2 === 0,
+            c !== b - 4,
+            digitSum(code) !== 13,
+            Number(code) % 3 !== 0
+          ].filter(Boolean).length;
+          if (failed !== 1) return `它违反了 ${failed} 条普通线索，不是目标密码。`;
+          return "真假线索数量对了，但数字本身还没命中。";
+        },
+        final: true
+      },
+      {
+        chapter: "第四章：最终案件",
+        title: "最后的档案",
+        story: "档案袋里写着最终密码。灯光下，有一条线索的墨迹明显不同。",
+        answer: "9316",
+        clues: ["密码是四位数。", "第一位是 9。", "第二位是第三位的三倍。", "第四位是偶数。", "前两位组成的数能被 3 整除。", "数字之和是 20。", "以上线索中有一条是假的。"],
+        hints: ["第一位是 9 基本可信。", "第二位是第三位的三倍，第三位只能是 0、1、2、3。", "答案会只违反一条普通线索。"],
+        fail: code => {
+          if (code.length !== 4) return "最后档案是四位数密码。";
+          const [a, b, c, d] = digits(code);
+          const failed = [
+            a !== 9,
+            b !== c * 3,
+            d % 2 !== 0,
+            (a * 10 + b) % 3 !== 0,
+            digitSum(code) !== 19
+          ].filter(Boolean).length;
+          if (failed !== 1) return `它违反了 ${failed} 条普通线索，不符合最终条件。`;
+          return "真假条件吻合，但还不是档案袋里的密码。";
+        },
+        final: true
+      }
+    ];
+
+    const storageKey = "digitalDetectiveProgress.v1";
+    const state = loadState();
+    let current = Math.min(state.current || 0, cases.length - 1);
+    let input = "";
+
+    const els = {
+      caseList: document.getElementById("caseList"),
+      progressNote: document.getElementById("progressNote"),
+      caseFile: document.getElementById("caseFile"),
+      chapterName: document.getElementById("chapterName"),
+      caseTitle: document.getElementById("caseTitle"),
+      caseStory: document.getElementById("caseStory"),
+      clueBoard: document.getElementById("clueBoard"),
+      hintBox: document.getElementById("hintBox"),
+      lockScreen: document.getElementById("lockScreen"),
+      codeInput: document.getElementById("codeInput"),
+      keypad: document.getElementById("keypad"),
+      submitBtn: document.getElementById("submitBtn"),
+      hintBtn: document.getElementById("hintBtn"),
+      clearBtn: document.getElementById("clearBtn"),
+      nextBtn: document.getElementById("nextBtn"),
+      status: document.getElementById("status"),
+      tryList: document.getElementById("tryList"),
+      caseStats: document.getElementById("caseStats"),
+      newGameBtn: document.getElementById("newGameBtn"),
+      randomCaseBtn: document.getElementById("randomCaseBtn"),
+      solvedModal: document.getElementById("solvedModal"),
+      modalStars: document.getElementById("modalStars"),
+      modalText: document.getElementById("modalText"),
+      stayBtn: document.getElementById("stayBtn"),
+      modalNextBtn: document.getElementById("modalNextBtn")
+    };
+
+    function loadState() {
+      const blank = {
+        current: 0,
+        unlocked: 1,
+        solved: {},
+        attempts: {},
+        hints: {}
+      };
+      try {
+        return Object.assign(blank, JSON.parse(localStorage.getItem(storageKey)) || {});
+      } catch {
+        return blank;
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(storageKey, JSON.stringify(state));
+    }
+
+    function digits(code) {
+      return String(code).split("").map(Number);
+    }
+
+    function digitSum(code) {
+      return digits(code).reduce((sum, n) => sum + n, 0);
+    }
+
+    function isPrime(n) {
+      if (n < 2) return false;
+      for (let i = 2; i <= Math.sqrt(n); i++) {
+        if (n % i === 0) return false;
+      }
+      return true;
+    }
+
+    function isSquare(n) {
+      return Number.isInteger(Math.sqrt(n));
+    }
+
+    function finalCaseChecks(code) {
+      const [a, b, c] = digits(code);
+      return [
+        digitSum(code) !== 14,
+        a % 2 !== 0,
+        b !== c + 6,
+        Number(code) % 2 !== 0,
+        a !== b + 1
+      ];
+    }
+
+    function starsFor(index) {
+      const solved = state.solved[index];
+      if (!solved) return 0;
+      return solved.stars;
+    }
+
+    function renderAll() {
+      renderCases();
+      renderCase();
+      renderInput();
+    }
+
+    function renderCases() {
+      const solvedCount = Object.keys(state.solved).length;
+      els.progressNote.textContent = `${solvedCount}/${cases.length}`;
+      els.caseList.innerHTML = "";
+      cases.forEach((item, index) => {
+        const locked = index > (state.unlocked || 1) - 1;
+        const btn = document.createElement("button");
+        btn.className = `case-btn ${index === current ? "active" : ""} ${locked ? "locked" : ""}`;
+        btn.disabled = locked;
+        btn.innerHTML = `
+          <span class="case-number">${locked ? "?" : index + 1}</span>
+          <span>
+            <span class="case-name">${item.title}</span>
+            <span class="case-meta">${item.answer.length} 位密码</span>
+          </span>
+          <span class="stars">${"★".repeat(starsFor(index))}${"☆".repeat(3 - starsFor(index))}</span>
+        `;
+        btn.addEventListener("click", () => selectCase(index));
+        els.caseList.appendChild(btn);
+      });
+    }
+
+    function renderCase() {
+      const item = cases[current];
+      const solved = Boolean(state.solved[current]);
+      els.caseFile.classList.toggle("solved", solved);
+      els.chapterName.textContent = item.chapter;
+      els.caseTitle.textContent = item.title;
+      els.caseStory.textContent = item.story;
+      els.clueBoard.innerHTML = "";
+      item.clues.forEach((clue, index) => {
+        const div = document.createElement("button");
+        div.className = "clue";
+        div.type = "button";
+        div.innerHTML = `<span class="clue-index">${index + 1}</span><span>${clue}</span>`;
+        div.addEventListener("click", () => div.classList.toggle("done"));
+        els.clueBoard.appendChild(div);
+      });
+      const used = state.hints[current] || 0;
+      if (used > 0) {
+        els.hintBox.classList.add("visible");
+        els.hintBox.innerHTML = `<strong>提示 ${used}：</strong>${item.hints[used - 1]}`;
+      } else {
+        els.hintBox.classList.remove("visible");
+        els.hintBox.textContent = "";
+      }
+      els.hintBtn.textContent = `提示 ${used}/${item.hints.length}`;
+      els.hintBtn.disabled = used >= item.hints.length;
+      els.nextBtn.disabled = current >= cases.length - 1 || current + 1 > (state.unlocked || 1) - 1;
+      els.status.className = "status";
+      els.status.textContent = solved ? `这起案件已破解，密码是 ${item.answer}。` : "输入你推理出的密码。";
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const attempts = state.attempts[current] || [];
+      els.caseStats.textContent = `${attempts.length} 次`;
+      els.tryList.innerHTML = "";
+      if (!attempts.length) {
+        els.tryList.innerHTML = `<div class="empty">还没有尝试。每次错误都会留下原因，方便继续推理。</div>`;
+        return;
+      }
+      attempts.slice().reverse().forEach(item => {
+        const div = document.createElement("div");
+        div.className = "try-item";
+        div.innerHTML = `<span class="try-code">${item.code}</span><span>${item.reason}</span>`;
+        els.tryList.appendChild(div);
+      });
+    }
+
+    function renderInput() {
+      const length = cases[current].answer.length;
+      els.codeInput.maxLength = length;
+      els.codeInput.value = input;
+      els.lockScreen.textContent = input.padEnd(length, "-");
+    }
+
+    function selectCase(index) {
+      current = index;
+      state.current = current;
+      input = "";
+      saveState();
+      renderAll();
+      els.codeInput.focus();
+    }
+
+    function addDigit(n) {
+      const length = cases[current].answer.length;
+      if (input.length >= length) return;
+      input += String(n);
+      renderInput();
+    }
+
+    function submitCode() {
+      const item = cases[current];
+      const code = input.trim();
+      if (code.length !== item.answer.length) {
+        setStatus(`密码需要 ${item.answer.length} 位。`, "bad");
+        return;
+      }
+      if (code === item.answer) {
+        solveCurrent();
+        return;
+      }
+      const reason = item.fail(code);
+      state.attempts[current] = state.attempts[current] || [];
+      state.attempts[current].push({ code, reason });
+      saveState();
+      setStatus(reason, "bad");
+      input = "";
+      renderInput();
+      renderHistory();
+    }
+
+    function solveCurrent() {
+      const attempts = (state.attempts[current] || []).length;
+      const hints = state.hints[current] || 0;
+      let stars = 3;
+      if (attempts > 0 || hints > 0) stars = 2;
+      if (attempts >= 3 || hints >= 2) stars = 1;
+      const old = state.solved[current];
+      if (!old || stars > old.stars) {
+        state.solved[current] = { stars };
+      }
+      state.unlocked = Math.max(state.unlocked || 1, Math.min(cases.length, current + 2));
+      saveState();
+      setStatus(`破解成功！密码是 ${cases[current].answer}。`, "good");
+      renderAll();
+      showSolvedModal(stars);
+    }
+
+    function showSolvedModal(stars) {
+      els.modalStars.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
+      els.modalText.textContent = stars === 3
+        ? "漂亮，一次成案。你的推理记录干净得像新档案。"
+        : "密码锁打开了，案件归档。下一案已经准备好。";
+      els.solvedModal.classList.add("open");
+      els.modalNextBtn.disabled = current >= cases.length - 1;
+    }
+
+    function setStatus(text, type) {
+      els.status.className = `status ${type || ""}`;
+      els.status.textContent = text;
+    }
+
+    function useHint() {
+      const item = cases[current];
+      const used = state.hints[current] || 0;
+      if (used >= item.hints.length) return;
+      state.hints[current] = used + 1;
+      saveState();
+      renderCase();
+    }
+
+    function nextCase() {
+      const next = Math.min(current + 1, cases.length - 1);
+      if (next <= (state.unlocked || 1) - 1) selectCase(next);
+    }
+
+    function resetGame() {
+      if (!confirm("确定要清空进度并重新开始吗？")) return;
+      localStorage.removeItem(storageKey);
+      const fresh = loadState();
+      Object.keys(state).forEach(key => delete state[key]);
+      Object.assign(state, fresh);
+      current = 0;
+      input = "";
+      renderAll();
+    }
+
+    function randomUnlockedCase() {
+      const max = state.unlocked || 1;
+      const index = Math.floor(Math.random() * max);
+      selectCase(index);
+    }
+
+    for (let n = 1; n <= 9; n++) {
+      addKey(n);
+    }
+    addKey("←", () => {
+      input = input.slice(0, -1);
+      renderInput();
+    });
+    addKey(0);
+    addKey("↵", submitCode);
+
+    function addKey(label, action) {
+      const btn = document.createElement("button");
+      btn.className = "key";
+      btn.textContent = label;
+      btn.addEventListener("click", action || (() => addDigit(label)));
+      els.keypad.appendChild(btn);
+    }
+
+    els.codeInput.addEventListener("input", event => {
+      input = event.target.value.replace(/\D/g, "").slice(0, cases[current].answer.length);
+      renderInput();
+    });
+    els.codeInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") submitCode();
+    });
+    els.submitBtn.addEventListener("click", submitCode);
+    els.hintBtn.addEventListener("click", useHint);
+    els.clearBtn.addEventListener("click", () => {
+      input = "";
+      renderInput();
+      els.codeInput.focus();
+    });
+    els.nextBtn.addEventListener("click", nextCase);
+    els.newGameBtn.addEventListener("click", resetGame);
+    els.randomCaseBtn.addEventListener("click", randomUnlockedCase);
+    els.stayBtn.addEventListener("click", () => els.solvedModal.classList.remove("open"));
+    els.modalNextBtn.addEventListener("click", () => {
+      els.solvedModal.classList.remove("open");
+      nextCase();
+    });
+    els.solvedModal.addEventListener("click", event => {
+      if (event.target === els.solvedModal) els.solvedModal.classList.remove("open");
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>
